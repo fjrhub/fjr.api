@@ -1,15 +1,16 @@
 {
-  "name": "fjr.api",
+  "name": "my-telegram-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "start": "node ."
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^4.21.2"
+    "grammy": "^1.38.3",
+    "next": "14.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   }
 }
