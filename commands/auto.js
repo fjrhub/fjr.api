@@ -1,4 +1,3 @@
-const { isAuthorized } = require("@/utils/helper");
 const axios = require("axios");
 const { exec } = require("child_process");
 const path = require("path");
