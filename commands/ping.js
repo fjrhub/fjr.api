@@ -1,5 +1,5 @@
 module.exports = {
-  name: "start",
+  name: "ping",
   async execute(ctx) {
     await ctx.reply("🤖 pong!");
   },
