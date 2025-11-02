@@ -4,6 +4,8 @@ module.exports = {
   name: "waifu",
   description: "Get a random waifu image from two fallback APIs",
   async execute(ctx) {
+    const chatId = ctx.chat.id;
+
     let statusMessage = null;
 
     const sendOrEditStatus = async (text) => {
