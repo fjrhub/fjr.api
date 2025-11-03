@@ -4,7 +4,6 @@ module.exports = {
   name: "auto",
   async execute(ctx) {
     const chatId = ctx.chat?.id;
-    if (ctx.from?.is_bot) return; // ✅ mencegah looping
     if (!chatId) return;
 
     const text = ctx.message?.text?.trim();
@@ -509,7 +508,7 @@ module.exports = {
 
       throw new Error("IG API 3 returned unsupported media.");
     };
-
+   
     // -------------------- MAIN FLOW (3 API attempts + fallback) --------------------
     try {
       await sendOrEditStatus("📡 Trying API 1...");
@@ -551,11 +550,12 @@ module.exports = {
         return;
       }
 
-      const res = await axios.get(
-        `https://api.siputzx.my.id/api/d/tiktok/v2?url=${encodeURIComponent(
-          input
-        )}`,
-        { timeout: 8000 }
+      const res = await getWithTimeout(
+        createUrl(
+          "siputzx",
+          `/api/d/tiktok/v2?url=${encodeURIComponent(input)}`
+        ),
+        8000 // timeout only for API
       );
 
       const data = res.data;
@@ -695,7 +695,7 @@ module.exports = {
         } catch (e3) {
           console.error("⚠️ API 3 failed:", e3?.message);
           await deleteStatus();
-          return;
+          return
         }
       }
     }
