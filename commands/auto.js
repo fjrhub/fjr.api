@@ -1,9 +1,11 @@
 const axios = require("axios");
+import { createUrl } from "../utils/api";
 
 module.exports = {
   name: "auto",
   async execute(ctx) {
     const chatId = ctx.chat?.id;
+    if (ctx.from?.is_bot) return; // ✅ mencegah looping
     if (!chatId) return;
 
     const text = ctx.message?.text?.trim();
@@ -508,7 +510,7 @@ module.exports = {
 
       throw new Error("IG API 3 returned unsupported media.");
     };
-   
+
     // -------------------- MAIN FLOW (3 API attempts + fallback) --------------------
     try {
       await sendOrEditStatus("📡 Trying API 1...");
@@ -695,7 +697,7 @@ module.exports = {
         } catch (e3) {
           console.error("⚠️ API 3 failed:", e3?.message);
           await deleteStatus();
-          return
+          return;
         }
       }
     }
