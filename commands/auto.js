@@ -321,16 +321,16 @@ module.exports = {
         tiktok: {
           siputzx: true,
           archive: true,
-          vreden: false, // ubah ke false untuk menonaktifkan sementara
+          vreden: true, // ubah ke false untuk menonaktifkan sementara
         },
         instagram: {
-          siputzx: true,
+          siputzx: false,
           archive: true,
-          vreden: true,
+          vreden: false,
         },
         facebook: {
           siputzx: true,
-          archive: false,
+          archive: true,
           vreden: true,
         },
       };
