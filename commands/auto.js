@@ -1,4 +1,5 @@
 const axios = require("axios");
+import { createUrl } from "../utils/api";
 
 module.exports = {
   name: "auto",
@@ -30,7 +31,7 @@ module.exports = {
     }
 
     const input = text;
-    
+
     const toNumberFormat = (n) =>
       n === undefined || n === null
         ? "0"
@@ -476,178 +477,134 @@ module.exports = {
     };
 
     // -------------------- MAIN FLOW (3 API attempts + fallback) --------------------
+    // -------------------- MAIN FLOW (PARALLEL FETCH + PROMISE.ANY) --------------------
     try {
-      if (isFacebook) {
-        const res1 = await axios.get(
-          createUrl(
-            "siputzx",
-            `/api/d/facebook?url=${encodeURIComponent(input)}`
-          ),
+      const apis = [];
+
+      if (isTikTok) {
+        apis.push(
           {
-            timeout: 8000,
+            url: createUrl(
+              "siputzx",
+              `/api/d/tiktok/v2?url=${encodeURIComponent(input)}`
+            ),
+            handler: tthandler1,
+            label: "Siputzx - TikTok",
+          },
+          {
+            url: createUrl(
+              "archive",
+              `/api/download/tiktok?url=${encodeURIComponent(input)}`
+            ),
+            handler: tthandler2,
+            label: "Archive - TikTok",
+          },
+          {
+            url: createUrl(
+              "vreden",
+              `/api/v1/download/tiktok?url=${encodeURIComponent(input)}`
+            ),
+            handler: tthandler3,
+            label: "Vreden - TikTok",
           }
         );
-        const data1 = res1.data?.data;
-        if (!res1.data?.status || !data1)
-          throw new Error(
-            "API 1 (Siputzx - Facebook) returned invalid response"
-          );
-        await fbHandler1(ctx, chatId, data1);
-        return;
       }
 
       if (isInstagram) {
-        const res1 = await axios.get(
-          createUrl("siputzx", `/api/d/igdl?url=${encodeURIComponent(input)}`),
-          { timeout: 8000 }
-        );
-
-        const data1 = res1.data;
-        if (!data1?.status || !Array.isArray(data1.data))
-          throw new Error(
-            "API 1 (Siputzx - Instagram) returned invalid response"
-          );
-
-        await igHandler1(ctx, chatId, data1);
-        return;
-      }
-
-      const res = await getWithTimeout(
-        createUrl(
-          "siputzx",
-          `/api/d/tiktok/v2?url=${encodeURIComponent(input)}`
-        ),
-        8000 // timeout only for API
-      );
-
-      const data = res.data;
-      if (!data?.status || !data?.data)
-        throw new Error("API (Siputzx - TikTok) returned invalid response");
-
-      // The sending process may take a long time, it is not affected by timeouts
-      await tthandler1(ctx, chatId, data);
-      return;
-    } catch (e1) {
-      console.warn("⚠️ API 1 failed:", e1?.message);
-      try {
-        if (isFacebook) {
-          const res2 = await axios.get(
-            createUrl(
-              "archive",
-              `/api/download/facebook?url=${encodeURIComponent(input)}`
+        apis.push(
+          {
+            url: createUrl(
+              "siputzx",
+              `/api/d/igdl?url=${encodeURIComponent(input)}`
             ),
-            {
-              timeout: 8000,
-            }
-          );
-          const result2 = res2.data?.result;
-          if (!res2.data?.status || !result2)
-            throw new Error(
-              "API 2 (Archive - Facebook) returned invalid response"
-            );
-          await fbHandler2(ctx, chatId, result2);
-          return;
-        }
-
-        if (isInstagram) {
-          const res2 = await axios.get(
-            createUrl(
+            handler: igHandler1,
+            label: "Siputzx - Instagram",
+          },
+          {
+            url: createUrl(
               "archive",
               `/api/download/instagram?url=${encodeURIComponent(input)}`
             ),
-            {
-              timeout: 8000,
-            }
-          );
-          const data2 = res2.data;
-          if (!data2?.status || !data2.result)
-            throw new Error(
-              "API 2 (Archive - Instagram) returned invalid response"
-            );
-          await igHandler2(ctx, chatId, data2);
-          return;
-        }
-
-        // TikTok API 2
-        const res2 = await axios.get(
-          createUrl(
-            "archive",
-            `/api/download/tiktok?url=${encodeURIComponent(input)}`
-          ),
+            handler: igHandler2,
+            label: "Archive - Instagram",
+          },
           {
-            timeout: 8000,
+            url: createUrl(
+              "vreden",
+              `/api/v1/download/instagram?url=${encodeURIComponent(input)}`
+            ),
+            handler: igHandler3,
+            label: "Vreden - Instagram",
           }
         );
-        const result2 = res2.data?.result;
-        if (!res2.data?.status || !result2)
-          throw new Error("API 2 (Archive - Tiktok) returned invalid response");
-        await tthandler2(ctx, chatId, result2);
-        return;
-      } catch (e2) {
-        console.warn("⚠️ API 2 failed:", e2?.message);
-        try {
-          if (isFacebook) {
-            const res3 = await axios.get(
-              createUrl(
-                "vreden",
-                `/api/v1/download/facebook?url=${encodeURIComponent(input)}`
-              ),
-              {
-                timeout: 8000,
-              }
-            );
-
-            const result3 = res3.data;
-            if (!result3?.status || !result3.result)
-              throw new Error(
-                "API 3 (Vreden - Facebook) returned invalid response."
-              );
-
-            await fbHandler3(ctx, chatId, result3);
-            return;
-          }
-
-          if (isInstagram) {
-            const res3 = await axios.get(
-              createUrl(
-                "vreden",
-                `/api/v1/download/instagram?url=${encodeURIComponent(input)}`
-              )
-            );
-
-            const data3 = res3.data;
-            if (!data3?.status || !data3?.result) {
-              throw new Error(
-                "API 3 (Vreden - Instagram) returned invalid response"
-              );
-            }
-
-            await igHandler3(ctx, chatId, data3);
-            return;
-          }
-
-          // TikTok API 3
-          const res3 = await axios.get(
-            createUrl(
-              "vreden",
-              `/api/v1/download/tiktok?url=${encodeURIComponent(input)}`
-            )
-          );
-
-          const result3 = res3.data?.result;
-          if (!res3.data?.status || !result3) {
-            throw new Error(
-              "API 3 (Vreden - TikTok) returned invalid response"
-            );
-          }
-
-          await tthandler3(ctx, chatId, result3);
-          return;
-        } catch (e3) {
-          console.error("⚠️ API 3 failed:", e3?.message);
-            return;
-          } 
       }
+
+      if (isFacebook) {
+        apis.push(
+          {
+            url: createUrl(
+              "siputzx",
+              `/api/d/facebook?url=${encodeURIComponent(input)}`
+            ),
+            handler: fbHandler1,
+            label: "Siputzx - Facebook",
+          },
+          {
+            url: createUrl(
+              "archive",
+              `/api/download/facebook?url=${encodeURIComponent(input)}`
+            ),
+            handler: fbHandler2,
+            label: "Archive - Facebook",
+          },
+          {
+            url: createUrl(
+              "vreden",
+              `/api/v1/download/facebook?url=${encodeURIComponent(input)}`
+            ),
+            handler: fbHandler3,
+            label: "Vreden - Facebook",
+          }
+        );
+      }
+
+      // Tidak ada API yang cocok → keluar
+      if (apis.length === 0) return;
+
+      // Jalankan semua request bersamaan
+      const fastest = await Promise.any(
+        apis.map(async (api) => {
+          const start = Date.now();
+          try {
+            const res = await getWithTimeout(api.url, 8000);
+            const data = res.data;
+
+            // validasi umum
+            if (!data || !data.status)
+              throw new Error(`Invalid response from ${api.label}`);
+
+            // handler tiap platform
+            await api.handler(ctx, chatId, data.result || data.data);
+
+            const duration = ((Date.now() - start) / 1000).toFixed(2);
+            console.log(`✅ ${api.label} selesai dalam ${duration}s`);
+            return api.label;
+          } catch (err) {
+            const duration = ((Date.now() - start) / 1000).toFixed(2);
+            console.warn(
+              `⚠️ ${api.label} gagal (${duration}s): ${err.message}`
+            );
+            throw err;
+          }
+        })
+      );
+
+      console.log(`🎯 API tercepat: ${fastest}`);
+      return;
+    } catch (err) {
+      console.error("❌ Semua API gagal:", err.message);
+      await ctx.reply("⚠️ Gagal memproses link dari semua sumber API.");
+      return;
     }
   },
 };
