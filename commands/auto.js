@@ -225,7 +225,6 @@ module.exports = {
     const igHandler2 = async (ctx, chatId, data) => {
       console.log("📥 [IG Handler 2] Raw data:", JSON.stringify(data, null, 2));
 
-      // ambil langsung dari root, bukan dari result
       const urls = Array.isArray(data.url)
         ? data.url
         : data.url
@@ -234,11 +233,10 @@ module.exports = {
 
       console.log("🔗 [IG Handler 2] URLs:", urls);
 
-      const caption = data.caption
-        ? data.caption
-        : `${toNumberFormat(data.like)} Likes · 💬 ${toNumberFormat(
-            data.comment
-          )}`;
+      // caption hanya berisi like & comment
+      const caption = `❤️ ${toNumberFormat(
+        data.like
+      )} Likes · 💬 ${toNumberFormat(data.comment)} Comments`;
 
       console.log("📊 [IG Handler 2] Metadata:", {
         isVideo: data.isVideo,
