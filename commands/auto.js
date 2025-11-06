@@ -225,22 +225,29 @@ module.exports = {
     const igHandler2 = async (ctx, chatId, data) => {
       console.log("📥 [IG Handler 2] Raw data:", JSON.stringify(data, null, 2));
 
-      const result = data.result || {};
-      const urls = Array.isArray(result.url)
-        ? result.url
-        : result.url
-        ? [result.url]
+      // ambil langsung dari root, bukan dari result
+      const urls = Array.isArray(data.url)
+        ? data.url
+        : data.url
+        ? [data.url]
         : [];
 
       console.log("🔗 [IG Handler 2] URLs:", urls);
+
+      const caption = data.caption
+        ? data.caption
+        : `${toNumberFormat(data.like)} Likes · 💬 ${toNumberFormat(
+            data.comment
+          )}`;
+
       console.log("📊 [IG Handler 2] Metadata:", {
-        isVideo: result.isVideo,
-        like: result.like,
+        isVideo: data.isVideo,
+        like: data.like,
+        comment: data.comment,
+        username: data.username,
       });
 
-      const caption = `${toNumberFormat(result.like)} Likes`;
-
-      if (result.isVideo && urls.length) {
+      if (data.isVideo && urls.length) {
         console.log("📤 Sending video:", urls[0]);
         await ctx.api.sendVideo(chatId, urls[0], {
           caption,
@@ -249,7 +256,7 @@ module.exports = {
         return;
       }
 
-      if (!result.isVideo && urls.length) {
+      if (!data.isVideo && urls.length) {
         console.log("📤 Sending photos:", urls);
         const groups = chunkArray(urls, 10);
         for (const grp of groups) {
@@ -264,7 +271,7 @@ module.exports = {
         return;
       }
 
-      throw new Error("No valid media URLs found in IG API 2.");
+      throw new Error("⚠️ No valid media URLs found in IG API 2.");
     };
 
     const igHandler3 = async (ctx, chatId, data) => {
