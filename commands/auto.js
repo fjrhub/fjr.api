@@ -482,7 +482,7 @@ module.exports = {
       // Konfigurasi aktif per platform
       const enableStatus = {
         tiktok: { siputzx: true, archive: false, vreden: true },
-        instagram: { siputzx: false, archive: true, vreden: false },
+        instagram: { siputzx: true, archive: true, vreden: true },
         facebook: { siputzx: true, archive: true, vreden: true },
       };
 
