@@ -357,8 +357,8 @@ module.exports = {
           vreden: true,
         },
         instagram: {
-          siputzx: false,
-          archive: true,
+          siputzx: true,
+          archive: false,
           vreden: false,
         },
         facebook: {
