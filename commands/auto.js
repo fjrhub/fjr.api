@@ -417,6 +417,22 @@ module.exports = {
       }
     };
 
+    // utilitas tambahan
+    function chunkArray(arr, size) {
+      const result = [];
+      for (let i = 0; i < arr.length; i += size)
+        result.push(arr.slice(i, i + size));
+      return result;
+    }
+
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function toNumberFormat(num) {
+      return new Intl.NumberFormat("id-ID").format(num || 0);
+    }
+
     const igHandler3 = async (ctx, chatId, data) => {
       const mediaItems = Array.isArray(data?.result?.data)
         ? data.result.data
