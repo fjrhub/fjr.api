@@ -357,12 +357,17 @@ module.exports = {
     };
 
     const igHandler2 = async (ctx, chatId, data) => {
-      if (!data || typeof data !== "object" || !data.result) {
-        console.warn("⚠️ IG API 2 invalid format:", data);
-        return; // Jangan throw agar tidak bikin fatal error di Vercel
+      // Cek validitas dasar
+      if (!data || typeof data !== "object") {
+        console.warn("⚠️ IG API 2 invalid root data:", data);
+        return;
       }
 
-      const result = data.result;
+      // Deteksi otomatis apakah formatnya pakai result atau tidak
+      const result =
+        data.result && typeof data.result === "object" ? data.result : data;
+
+      // Ambil URL media
       const mediaUrls = Array.isArray(result.url)
         ? result.url.filter(Boolean)
         : typeof result.url === "string"
@@ -370,15 +375,16 @@ module.exports = {
         : [];
 
       if (!mediaUrls.length) {
-        console.warn("⚠️ IG API 2 returned empty URL list.");
-        return; // langsung return tanpa error
+        console.warn("⚠️ IG API 2 returned empty or invalid URLs:", result);
+        return;
       }
 
+      // Ambil properti lain
       const isVideo = Boolean(result.isVideo);
       const likes = result.like || 0;
       const comments = result.comment || 0;
 
-      // Caption hanya emoji + angka, tanpa teks tambahan
+      // Caption hanya emoji ❤️ 💬
       const caption = `❤️ ${toNumberFormat(likes)}   💬 ${toNumberFormat(
         comments
       )}`;
@@ -394,7 +400,7 @@ module.exports = {
           return;
         }
 
-        // kirim foto (single atau multiple)
+        // kirim foto (single / multiple)
         const groups = chunkArray(mediaUrls, 10);
         for (const grp of groups) {
           const mediaGroup = grp.map((url, idx) => ({
@@ -404,7 +410,7 @@ module.exports = {
           }));
 
           await ctx.api.sendMediaGroup(chatId, mediaGroup);
-          if (groups.length > 1) await delay(1500); // delay kalau multiple
+          if (groups.length > 1) await delay(1500);
         }
       } catch (err) {
         console.error("❌ Send Error (IG Handler 2):", err.message);
