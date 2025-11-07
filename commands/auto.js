@@ -315,7 +315,6 @@ module.exports = {
 
     // Instagram handlers
     const igHandler1 = async (ctx, chatId, data) => {
-      // data bisa berupa object { data: [...] } atau langsung array
       const results = Array.isArray(data)
         ? data
         : Array.isArray(data.data)
@@ -330,29 +329,26 @@ module.exports = {
       const video = urls.find((u) => u.includes(".mp4"));
       const photos = urls.filter((u) => !u.includes(".mp4"));
 
-      if (video) {
-        await ctx.api.sendVideo(chatId, video);
-        return;
-      }
-
-      if (photos.length) {
-        const groups = chunkArray(photos, 10);
-        for (const grp of groups) {
-          const mediaGroup = grp.map((url) => ({ type: "photo", media: url }));
-          try {
-            await ctx.api.sendMediaGroup(chatId, mediaGroup);
-          } catch (err) {
-            console.error(
-              "Gagal kirim media group:",
-              err.description || err.message
-            );
-          }
-          await delay(1500);
+      try {
+        if (video) {
+          await ctx.api.sendVideo(chatId, video);
+          return;
         }
-        return;
-      }
 
-      throw new Error("No media content detected.");
+        if (photos.length) {
+          // kirim maksimal 10 foto agar tidak melebihi waktu eksekusi
+          const maxSend = photos.slice(0, 10);
+          await ctx.api.sendMediaGroup(
+            chatId,
+            maxSend.map((url) => ({ type: "photo", media: url }))
+          );
+          return;
+        }
+
+        throw new Error("No media content detected.");
+      } catch (err) {
+        console.error("❌ IG Handler 1 error:", err.message);
+      }
     };
 
     const igHandler2 = async (ctx, chatId, data) => {
