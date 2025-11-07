@@ -32,19 +32,21 @@ module.exports = {
 
     const input = text;
 
-    const toNumberFormat = (n) =>
-      n === undefined || n === null
-        ? "0"
-        : n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-    const chunkArray = (arr, size) => {
-      if (!Array.isArray(arr)) return [];
+    // utilitas tambahan
+    function chunkArray(arr, size) {
       const result = [];
-      for (let i = 0; i < arr.length; i += size) {
+      for (let i = 0; i < arr.length; i += size)
         result.push(arr.slice(i, i + size));
-      }
       return result;
-    };
+    }
+
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function toNumberFormat(num) {
+      return new Intl.NumberFormat("id-ID").format(num || 0);
+    }
 
     async function getWithTimeout(url, timeoutMs = 8000) {
       const start = Date.now(); // ⏱️ mulai hitung waktu
@@ -69,9 +71,6 @@ module.exports = {
         throw err;
       }
     }
-
-    // Fungsi delay sederhana
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     // Fungsi bantu untuk mempersingkat angka
     const formatNumber = (num) => {
@@ -416,22 +415,6 @@ module.exports = {
         console.error("❌ Send Error (IG Handler 2):", err.message);
       }
     };
-
-    // utilitas tambahan
-    function chunkArray(arr, size) {
-      const result = [];
-      for (let i = 0; i < arr.length; i += size)
-        result.push(arr.slice(i, i + size));
-      return result;
-    }
-
-    function delay(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
-    function toNumberFormat(num) {
-      return new Intl.NumberFormat("id-ID").format(num || 0);
-    }
 
     const igHandler3 = async (ctx, chatId, data) => {
       const mediaItems = Array.isArray(data?.result?.data)
