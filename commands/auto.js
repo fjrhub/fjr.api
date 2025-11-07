@@ -316,35 +316,30 @@ module.exports = {
 
     // Instagram handlers
     const igHandler1 = async (ctx, chatId, data) => {
-      if (!data || !Array.isArray(data.data))
-        throw new Error(
-          "Invalid API format: data field not found or not array."
-        );
+      // data bisa berupa object { data: [...] } atau langsung array
+      const results = Array.isArray(data)
+        ? data
+        : Array.isArray(data.data)
+        ? data.data
+        : [];
 
-      const results = data.data;
-      if (!results.length) throw new Error("API returned empty media list.");
+      if (!results.length) throw new Error("Invalid or empty API data format.");
 
-      // Ambil semua URL valid
       const urls = results.map((i) => i?.url).filter(Boolean);
       if (!urls.length) throw new Error("No valid media URLs found.");
 
-      // Cek apakah ada video (file .mp4)
       const video = urls.find((u) => u.includes(".mp4"));
       const photos = urls.filter((u) => !u.includes(".mp4"));
 
       if (video) {
-        // Kirim video
         await ctx.api.sendVideo(chatId, video);
         return;
       }
 
       if (photos.length) {
-        // Bagi foto menjadi grup berisi maksimal 10 item
         const groups = chunkArray(photos, 10);
-
         for (const grp of groups) {
           const mediaGroup = grp.map((url) => ({ type: "photo", media: url }));
-
           try {
             await ctx.api.sendMediaGroup(chatId, mediaGroup);
           } catch (err) {
@@ -353,11 +348,8 @@ module.exports = {
               err.description || err.message
             );
           }
-
-          // Delay 1.5 detik sebelum kirim grup berikutnya
           await delay(1500);
         }
-
         return;
       }
 
@@ -482,7 +474,7 @@ module.exports = {
       // Konfigurasi aktif per platform
       const enableStatus = {
         tiktok: { siputzx: true, archive: false, vreden: true },
-        instagram: { siputzx: true, archive: true, vreden: true },
+        instagram: { siputzx: true, archive: false, vreden: false },
         facebook: { siputzx: true, archive: true, vreden: true },
       };
 
