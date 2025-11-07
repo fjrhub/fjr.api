@@ -369,8 +369,30 @@ module.exports = {
         : [];
 
       const isVideo = !!result.isVideo;
-      const caption = `${toNumberFormat(result.like)} Likes`;
 
+      // 🔹 Gunakan hanya icon tanpa teks
+      // Jika ingin menampilkan angka singkat, gunakan fungsi format singkat (contoh: 1.2K)
+      const likeIcon = "❤️";
+      const commentIcon = "💬";
+
+      const likeCount = result.like ?? 0;
+      const commentCount = result.comment ?? 0;
+
+      // Format angka pendek (contoh: 15000 → 15K)
+      const formatCount = (num) => {
+        if (num >= 1_000_000)
+          return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+        if (num >= 1_000)
+          return (num / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+        return num.toString();
+      };
+
+      // 🔹 Caption dengan hanya icon + angka singkat
+      const caption = `${likeIcon} ${formatCount(
+        likeCount
+      )}  ${commentIcon} ${formatCount(commentCount)}`;
+
+      // 🟣 Kirim video
       if (isVideo && mediaUrls.length) {
         await ctx.api.sendVideo(chatId, mediaUrls[0], {
           caption,
@@ -380,7 +402,9 @@ module.exports = {
         return;
       }
 
+      // 🟢 Kirim foto (bisa 1 atau banyak)
       if (!isVideo && mediaUrls.length) {
+        // Bagi per 10 agar sesuai limit Telegram
         const groups = chunkArray(mediaUrls, 10);
 
         for (const grp of groups) {
@@ -391,7 +415,7 @@ module.exports = {
           }));
 
           await ctx.api.sendMediaGroup(chatId, mediaGroup);
-          await delay(1500); // delay hanya di foto
+          await delay(1500);
         }
 
         return;
@@ -473,7 +497,7 @@ module.exports = {
 
       const enableStatus = {
         tiktok: { siputzx: true, archive: false, vreden: true },
-        instagram: { siputzx: true, archive: false, vreden: false },
+        instagram: { siputzx: false, archive: false, vreden: false },
         facebook: { siputzx: true, archive: true, vreden: true },
       };
 
