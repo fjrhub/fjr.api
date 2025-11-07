@@ -568,52 +568,61 @@ module.exports = {
         );
       }
 
-      // Hapus false/null
+      // Filter hanya API aktif
       const validApis = apis.filter(Boolean);
       if (validApis.length === 0) return;
 
-      let success = false;
+      let sent = false; // 🛡️ mencegah duplikasi kirim
 
-      // Jalankan semua request API secara paralel
+      // Buat controller untuk tiap request (biar bisa dibatalkan)
       const controllers = validApis.map(() => new AbortController());
+
+      // Jalankan semua request API paralel
       const requests = validApis.map((api, i) => {
         const controller = controllers[i];
         const start = Date.now();
+
         return axios
           .get(api.url, { signal: controller.signal })
           .then((res) => {
             const duration = ((Date.now() - start) / 1000).toFixed(2);
+            const data = res.data;
             console.log(`✅ ${api.label} fetched in ${duration}s`);
-            return { api, res, duration };
+
+            // Validasi format response
+            if (!data || (!data.status && !data.result))
+              throw new Error("Invalid API format");
+
+            return { api, res: data, duration };
           })
           .catch((err) => {
             const duration = ((Date.now() - start) / 1000).toFixed(2);
             console.warn(
               `⚠️ ${api.label} failed after ${duration}s: ${err.message}`
             );
-            return null; // tandai gagal
+            return null;
           });
       });
 
-      // Tunggu salah satu yang berhasil lebih dulu
       const results = await Promise.all(requests);
 
-      // Ambil API tercepat yang valid (status = true dan ada data)
-      const firstValid = results.find(
-        (r) => r && r.res?.data && (r.res.data.status || r.res.data.result)
-      );
+      // Ambil hasil API valid pertama
+      for (const result of results) {
+        if (!result || sent) continue;
+        const { api, res, duration } = result;
+        const data = res.result || res.data;
 
-      if (firstValid) {
-        success = true;
-        // Batalkan semua request lain
-        controllers.forEach((ctrl) => ctrl.abort());
+        if (res.status || res.result) {
+          sent = true; // 🔒 kunci agar tidak kirim dua kali
+          controllers.forEach((ctrl) => ctrl.abort());
+          console.log(`🚀 Using fastest API: ${api.label} (${duration}s)`);
 
-        const { api, res, duration } = firstValid;
-        console.log(`🚀 Using fastest API: ${api.label} (${duration}s)`);
+          await api.handler(ctx, chatId, data);
+          break;
+        }
+      }
 
-        const data = res.data.result || res.data.data;
-        await api.handler(ctx, chatId, data);
-      } else {
+      if (!sent) {
         await ctx.reply("⚠️ Semua API gagal merespons atau tidak valid.");
       }
     } catch (err) {
