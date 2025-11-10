@@ -372,53 +372,80 @@ module.exports = {
 
       const igHandler3 = async (ctx, chatId, data) => {
         try {
-          const mediaItems = Array.isArray(data?.result?.data)
-            ? data.result.data
-            : [];
+          console.log("📥 [IG Handler 3] Full API Response:");
+          console.log(JSON.stringify(data, null, 2));
 
-          if (!mediaItems.length)
-            throw new Error("IG API 3 returned empty media array.");
+          // Validasi struktur utama
+          if (!data?.result || !Array.isArray(data.result.data)) {
+            console.error(
+              "❌ [IG Handler 3] Invalid response: 'result.data' not found or not array."
+            );
+            throw new Error("Invalid Instagram API structure.");
+          }
 
+          const profile = data.result.profile || {};
+          const captionData = data.result.caption || {};
+          const stats = data.result.statistics || {};
+          const mediaList = data.result.data;
+
+          console.log(`🧩 Media ditemukan: ${mediaList.length}`);
+
+          // Caption dengan statistik
           const caption =
-            `• Views: ${data.result.views || "-"}\n` +
-            `• Likes: ${data.result.like || "-"}\n` +
-            `• Comment: ${data.result.comment || "-"}\n` +
-            `• Download: ${data.result.download || "-"}`;
+            `👤 ${profile.full_name || profile.username || "Unknown"}\n` +
+            (captionData.text ? `📝 ${captionData.text}\n\n` : "") +
+            `📊 Statistik:\n` +
+            `❤️ Like: ${stats.like_count ?? "-"} | 💬 Comment: ${
+              stats.comment_count ?? "-"
+            }\n` +
+            `▶️ Views: ${stats.play_count ?? "-"} | 🔁 Share: ${
+              stats.share_count ?? "-"
+            }`;
 
-          const images = mediaItems
-            .filter((i) => i.type === "image" && i.url)
-            .map((i) => i.url);
+          console.log("🪶 Caption:", caption);
 
-          const videos = mediaItems
-            .filter((i) => i.type === "video" && i.url)
-            .map((i) => i.url);
+          const videos = mediaList.filter((m) => m.type === "video" && m.url);
+          const images = mediaList.filter((m) => m.type === "image" && m.url);
 
-          if (videos.length) {
-            await ctx.api.sendVideo(chatId, videos[0], {
+          console.log(
+            `🎥 Video: ${videos.length} | 🖼️ Gambar: ${images.length}`
+          );
+
+          if (videos.length > 0) {
+            console.log("🚀 Mengirim video pertama...");
+            await ctx.api.sendVideo(chatId, videos[0].url, {
               caption,
               supports_streaming: true,
             });
+            console.log("✅ Video berhasil dikirim.");
             return;
           }
 
-          if (images.length) {
-            const groups = chunkArray(images, 10);
+          if (images.length > 0) {
+            console.log("🚀 Mengirim semua gambar...");
+            const groups = chunkArray(
+              images.map((img) => img.url),
+              10
+            );
             let first = true;
-            for (const grp of groups) {
-              const mediaGroup = grp.map((u, idx) => ({
+            for (const group of groups) {
+              const mediaGroup = group.map((url, idx) => ({
                 type: "photo",
-                media: u,
+                media: url,
                 caption: first && idx === 0 ? caption : undefined,
               }));
               await ctx.api.sendMediaGroup(chatId, mediaGroup);
               first = false;
               await delay(1500);
             }
+            console.log("✅ Semua gambar berhasil dikirim.");
             return;
           }
 
-          throw new Error("IG API 3 returned unsupported media.");
-        } catch {
+          console.warn("⚠️ Tidak ditemukan media video maupun gambar.");
+          await ctx.reply("⚠️ Tidak ditemukan media pada postingan ini.");
+        } catch (err) {
+          console.error("❌ [IG Handler 3] Error:", err);
           await ctx.reply("⚠️ Gagal memproses media Instagram (Handler 3).");
         }
       };
