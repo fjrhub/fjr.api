@@ -62,59 +62,66 @@ module.exports = {
       // TikTok handler variations
       const tthandler1 = async (ctx, chatId, data) => {
         try {
-          // Validasi struktur data
-          if (!data?.data || !Array.isArray(data.data.urls)) {
-            throw new Error("Invalid TikTok API response structure.");
+          console.log("📩 [TT Handler] Incoming data preview:");
+          console.log(JSON.stringify(data, null, 2)); // log seluruh struktur
+
+          if (!data?.data) {
+            console.error("❌ [TT Handler] data.data tidak ditemukan.");
+            throw new Error(
+              "Invalid TikTok API response structure (missing data.data)."
+            );
+          }
+
+          if (!Array.isArray(data.data.urls)) {
+            console.error(
+              "❌ [TT Handler] Properti data.data.urls tidak valid:",
+              data.data.urls
+            );
+            throw new Error(
+              "Invalid TikTok API response structure (urls missing or not array)."
+            );
           }
 
           const { type, urls } = data.data;
+          console.log(
+            `ℹ️ [TT Handler] Type: ${type}, URL count: ${urls.length}`
+          );
 
-          // Jika tidak ada URL
           if (!urls.length) {
+            console.warn(
+              "⚠️ [TT Handler] Tidak ada URL media di data.data.urls"
+            );
             throw new Error("No media URLs found from TikTok API.");
           }
 
-          // Jika tipe video
-          if (type === "video") {
-            const firstVideo = urls[0]; // ambil video pertama
-            try {
-              await ctx.api.sendVideo(chatId, firstVideo);
-            } catch (err) {
-              console.error("❌ Gagal kirim video:", err.message);
-              throw err;
-            }
+          // Jika video
+          if (type === "video" || urls[0].includes(".mp4")) {
+            const firstVideo = urls[0];
+            console.log("🎥 [TT Handler] Mengirim video:", firstVideo);
+            await ctx.api.sendVideo(chatId, firstVideo);
+            console.log("✅ [TT Handler] Video terkirim sukses.");
             return;
           }
 
-          // Jika tipe foto (jarang tapi mungkin)
-          if (type === "photo") {
-            const photos = urls.slice(0, 10); // maksimal 10
+          // Jika foto
+          if (type === "photo" || urls[0].match(/\.(jpg|jpeg|png|webp)$/)) {
+            const photos = urls.slice(0, 10);
+            console.log(`🖼️ [TT Handler] Mengirim ${photos.length} foto.`);
             const mediaGroup = photos.map((url) => ({
               type: "photo",
               media: url,
             }));
 
-            try {
-              await ctx.api.sendMediaGroup(chatId, mediaGroup);
-            } catch (err) {
-              if (
-                err.error_code === 429 ||
-                err.description?.includes("Too Many Requests")
-              ) {
-                console.warn("⚠️ Rate limited! Waiting 5 seconds...");
-                await delay(5000);
-                await ctx.api.sendMediaGroup(chatId, mediaGroup);
-              } else {
-                console.error("❌ Gagal kirim foto:", err.message);
-              }
-            }
-
+            await ctx.api.sendMediaGroup(chatId, mediaGroup);
+            console.log("✅ [TT Handler] Foto terkirim sukses.");
             return;
           }
 
+          console.warn("⚠️ [TT Handler] Jenis konten tidak dikenali:", type);
           throw new Error("Unsupported TikTok media type.");
         } catch (err) {
           console.error("❌ TT Handler 1 error:", err.message);
+          console.error("📜 Stack trace:", err.stack);
         }
       };
 
