@@ -371,71 +371,56 @@ module.exports = {
       };
 
       const igHandler3 = async (ctx, chatId, data) => {
-        const mediaItems = Array.isArray(data?.result?.data)
-          ? data.result.data
-          : [];
-        const stats = data?.result?.statistics || {};
+        try {
+          const mediaItems = Array.isArray(data?.result?.data)
+            ? data.result.data
+            : [];
 
-        if (!mediaItems.length) {
-          throw new Error("IG API 3 returned empty media array.");
-        }
+          if (!mediaItems.length)
+            throw new Error("IG API 3 returned empty media array.");
 
-        const images = mediaItems
-          .filter((i) => i.type === "image" && i.url)
-          .map((i) => i.url);
+          const caption =
+            `• Views: ${data.result.views || "-"}\n` +
+            `• Likes: ${data.result.like || "-"}\n` +
+            `• Comment: ${data.result.comment || "-"}\n` +
+            `• Download: ${data.result.download || "-"}`;
 
-        const videos = mediaItems
-          .filter((i) => i.type === "video" && i.url)
-          .map((i) => i.url);
+          const images = mediaItems
+            .filter((i) => i.type === "image" && i.url)
+            .map((i) => i.url);
 
-        // 🔹 Format statistik (hanya yang ada nilainya)
-        const statLines = [
-          stats.like_count && stats.like_count !== "-"
-            ? `❤️ ${stats.like_count}`
-            : null,
-          stats.comment_count && stats.comment_count !== "-"
-            ? `💬 ${stats.comment_count}`
-            : null,
-          stats.play_count && stats.play_count !== "-"
-            ? `▶️ ${stats.play_count}`
-            : null,
-          stats.share_count && stats.share_count !== "-"
-            ? `🔁 ${stats.share_count}`
-            : null,
-          stats.save_count && stats.save_count !== "-"
-            ? `💾 ${stats.save_count}`
-            : null,
-        ].filter(Boolean);
+          const videos = mediaItems
+            .filter((i) => i.type === "video" && i.url)
+            .map((i) => i.url);
 
-        const statCaption = statLines.length
-          ? statLines.join(" · ")
-          : "ℹ️ No statistics available.";
-
-        // --- Jika video tersedia ---
-        if (videos.length) {
-          await ctx.api.sendVideo(chatId, videos[0], {
-            supports_streaming: true,
-            caption: statCaption,
-          });
-          return;
-        }
-
-        // --- Jika foto tersedia ---
-        if (images.length) {
-          const groups = chunkArray(images, 10);
-          for (const grp of groups) {
-            const mediaGroup = grp.map((u) => ({
-              type: "photo",
-              media: u,
-              caption: statCaption, // caption hanya di foto pertama, opsional
-            }));
-            await ctx.api.sendMediaGroup(chatId, mediaGroup);
-            await delay(1500); // jeda agar tidak spam API Telegram
+          if (videos.length) {
+            await ctx.api.sendVideo(chatId, videos[0], {
+              caption,
+              supports_streaming: true,
+            });
+            return;
           }
-          return;
-        }
 
-        throw new Error("IG API 3 returned unsupported media.");
+          if (images.length) {
+            const groups = chunkArray(images, 10);
+            let first = true;
+            for (const grp of groups) {
+              const mediaGroup = grp.map((u, idx) => ({
+                type: "photo",
+                media: u,
+                caption: first && idx === 0 ? caption : undefined,
+              }));
+              await ctx.api.sendMediaGroup(chatId, mediaGroup);
+              first = false;
+              await delay(1500);
+            }
+            return;
+          }
+
+          throw new Error("IG API 3 returned unsupported media.");
+        } catch {
+          await ctx.reply("⚠️ Gagal memproses media Instagram (Handler 3).");
+        }
       };
 
       const enableStatus = {
