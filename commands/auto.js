@@ -439,7 +439,7 @@ module.exports = {
       };
 
       const enableStatus = {
-        tiktok: { siputzx: false, archive: false, vreden: true },
+        tiktok: { siputzx: true, archive: true, vreden: true },
         instagram: { siputzx: true, archive: false, vreden: false },
         facebook: { siputzx: true, archive: true, vreden: true },
       };
