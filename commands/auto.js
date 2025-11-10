@@ -372,42 +372,26 @@ module.exports = {
 
       const igHandler3 = async (ctx, chatId, data) => {
         try {
-          console.log("📥 [IG Handler 3] Full API Response:");
-          console.log(JSON.stringify(data, null, 2));
-
-          // 🔎 Deteksi struktur otomatis (versi lama & baru)
           const root = data.result ? data.result : data;
 
           if (!root?.data || !Array.isArray(root.data)) {
-            console.error(
-              "❌ [IG Handler 3] Invalid response: 'data' not found or not array."
-            );
             throw new Error("Invalid Instagram API structure.");
           }
 
           const mediaList = root.data;
-          console.log(`🧩 Jumlah media ditemukan: ${mediaList.length}`);
-
           const videos = mediaList.filter((m) => m.type === "video" && m.url);
           const images = mediaList.filter((m) => m.type === "image" && m.url);
 
-          console.log(
-            `🎥 Video: ${videos.length} | 🖼️ Gambar: ${images.length}`
-          );
-
           // Kirim video jika ada
           if (videos.length > 0) {
-            console.log("🚀 Mengirim video pertama tanpa caption...");
             await ctx.api.sendVideo(chatId, videos[0].url, {
               supports_streaming: true,
             });
-            console.log("✅ Video berhasil dikirim.");
             return;
           }
 
           // Kirim semua gambar jika tidak ada video
           if (images.length > 0) {
-            console.log("🚀 Mengirim semua gambar tanpa caption...");
             const groups = chunkArray(
               images.map((img) => img.url),
               10
@@ -420,14 +404,11 @@ module.exports = {
               await ctx.api.sendMediaGroup(chatId, mediaGroup);
               await delay(1500);
             }
-            console.log("✅ Semua gambar berhasil dikirim.");
             return;
           }
 
-          console.warn("⚠️ Tidak ditemukan media video maupun gambar.");
           await ctx.reply("⚠️ Tidak ditemukan media pada postingan ini.");
-        } catch (err) {
-          console.error("❌ [IG Handler 3] Error:", err.message);
+        } catch {
           await ctx.reply("Terjadi kesalahan saat memproses media Instagram.");
         }
       };
