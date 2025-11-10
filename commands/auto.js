@@ -62,20 +62,9 @@ module.exports = {
       // TikTok handler variations
       const tthandler1 = async (ctx, chatId, data) => {
         try {
-          console.log(
-            "📩 [TT Handler] Incoming data preview:",
-            JSON.stringify(data, null, 2)
-          );
-
-          // Deteksi struktur API (karena bisa data.data atau langsung data)
           const payload = data?.data ? data.data : data;
-
-          if (!payload || !payload.download) {
-            console.error("❌ [TT Handler] Struktur tidak valid:", payload);
-            throw new Error(
-              "Invalid TikTok API response structure (missing data.data or download)."
-            );
-          }
+          if (!payload || !payload.download)
+            throw new Error("Invalid TikTok API response structure.");
 
           const { download } = payload;
           const videos = Array.isArray(download.video)
@@ -85,27 +74,17 @@ module.exports = {
             ? download.photo.filter(Boolean)
             : [];
 
-          if (!videos.length && !photos.length) {
-            console.error(
-              "❌ [TT Handler] Tidak ada media yang dapat diunduh:",
-              download
-            );
+          if (!videos.length && !photos.length)
             throw new Error("No downloadable media found from TikTok API.");
-          }
 
-          // Jika ada video → kirim langsung
           if (videos.length) {
             const firstVideo = videos[0];
-            console.log(`🎥 [TT Handler] Sending video: ${firstVideo}`);
             await ctx.api.sendVideo(chatId, firstVideo);
             return;
           }
 
-          // Jika ada foto → kirim semua (maks 10 per batch)
           if (photos.length) {
-            console.log(`🖼️ [TT Handler] Sending ${photos.length} photos...`);
             const groups = chunkArray(photos, 10);
-
             for (const grp of groups) {
               const mediaGroup = grp.map((url) => ({
                 type: "photo",
@@ -119,10 +98,7 @@ module.exports = {
                   e.error_code === 429 ||
                   e.description?.includes("Too Many Requests")
                 ) {
-                  console.warn("⚠️ Rate limited! Waiting 5 seconds...");
                   await delay(5000);
-                } else {
-                  console.error("❌ [TT Handler] Gagal kirim media group:", e);
                 }
               }
 
@@ -130,8 +106,6 @@ module.exports = {
             }
           }
         } catch (err) {
-          console.error("❌ TT Handler 1 error:", err.message);
-          console.error("📜 Stack trace:", err.stack);
           await ctx.reply("⚠️ Gagal memproses media TikTok (Handler 1).");
         }
       };
