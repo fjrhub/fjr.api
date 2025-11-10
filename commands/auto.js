@@ -255,19 +255,22 @@ module.exports = {
       };
 
       const fbHandler3 = async (ctx, chatId, data) => {
-        if (!data?.result?.download?.hd)
-          throw new Error("Tidak ada URL video HD dari API 3 (Vreden).");
+        try {
+          const result = data?.result;
+          if (!result) throw new Error("Struktur data API tidak valid.");
 
-        const videoUrl = data.result.download.hd;
-        const durasion = data.result.durasi || "Video durasion";
-        const thumb = data.result.thumbnail;
+          const videoUrl = result.download?.hd || result.download?.sd;
+          if (!videoUrl) throw new Error("Tidak ada URL video yang tersedia.");
 
-        // Kirim video dengan caption dan thumbnail (jika ada)
-        await ctx.api.sendVideo(chatId, videoUrl, {
-          caption: `Duration: ${durasion}s`,
-          parse_mode: "Markdown",
-          thumbnail: thumb,
-        });
+          const thumbnail = result.thumbnail;
+
+          await ctx.api.sendVideo(chatId, videoUrl, {
+            supports_streaming: true,
+            thumbnail,
+          });
+        } catch {
+          await ctx.reply("Terjadi kesalahan saat memproses video Facebook.");
+        }
       };
 
       // Instagram handlers
