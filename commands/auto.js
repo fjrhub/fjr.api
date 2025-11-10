@@ -260,16 +260,16 @@ module.exports = {
           console.log("Data mentah dari API:", JSON.stringify(data, null, 2));
 
           // Validasi struktur dasar
-          if (!data || !data.result || !data.result.download) {
+          if (!data || !data.download) {
             console.error("❌ Struktur data tidak sesuai!");
             throw new Error("Data API tidak sesuai format yang diharapkan.");
           }
 
-          const videoUrl = data.result.download.hd || data.result.download.sd;
-          const thumb = data.result.thumbnail || null;
+          const videoUrl = data.download.hd || data.download.sd;
+          const thumb = data.thumbnail || null;
 
-          console.log("HD URL:", data.result.download.hd);
-          console.log("SD URL:", data.result.download.sd);
+          console.log("HD URL:", data.download.hd);
+          console.log("SD URL:", data.download.sd);
           console.log("Thumbnail:", thumb);
 
           if (!videoUrl) {
@@ -281,7 +281,7 @@ module.exports = {
 
           // Kirim video tanpa caption
           await ctx.api.sendVideo(chatId, videoUrl, {
-            ...(thumb ? { thumbnail: thumb } : {}), // hanya kirim thumbnail kalau ada
+            ...(thumb ? { thumbnail: thumb } : {}),
           });
 
           console.log("✅ Video berhasil dikirim:", videoUrl);
