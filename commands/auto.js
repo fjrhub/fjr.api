@@ -255,23 +255,41 @@ module.exports = {
       };
 
       const fbHandler3 = async (ctx, chatId, data) => {
-        if (!data?.result?.download) {
-          throw new Error("Tidak ada URL video dari API 3 (Vreden).");
-        }
+        try {
+          console.log("=== DEBUG fbHandler3 ===");
+          console.log("Data mentah dari API:", JSON.stringify(data, null, 2));
 
-        // Cek apakah HD tersedia, jika tidak, coba SD
-        let videoUrl = data.result.download.hd;
-        if (!videoUrl) {
-          videoUrl = data.result.download.sd;
+          // Validasi struktur dasar
+          if (!data || !data.result || !data.result.download) {
+            console.error("❌ Struktur data tidak sesuai!");
+            throw new Error("Data API tidak sesuai format yang diharapkan.");
+          }
+
+          const videoUrl = data.result.download.hd || data.result.download.sd;
+          const thumb = data.result.thumbnail || null;
+
+          console.log("HD URL:", data.result.download.hd);
+          console.log("SD URL:", data.result.download.sd);
+          console.log("Thumbnail:", thumb);
+
           if (!videoUrl) {
+            console.error("❌ Tidak ada URL video HD maupun SD.");
             throw new Error(
-              "Tidak ada URL video HD atau SD dari API 3 (Vreden)."
+              "Tidak ada URL video yang valid dari API 3 (Vreden)."
             );
           }
-        }
 
-        // Kirim video tanpa caption
-        await ctx.api.sendVideo(chatId, videoUrl);
+          // Kirim video tanpa caption
+          await ctx.api.sendVideo(chatId, videoUrl, {
+            ...(thumb ? { thumbnail: thumb } : {}), // hanya kirim thumbnail kalau ada
+          });
+
+          console.log("✅ Video berhasil dikirim:", videoUrl);
+        } catch (error) {
+          console.error("⚠️ Terjadi error saat mengirim video:");
+          console.error(error);
+          await ctx.reply(`Gagal mengirim video: ${error.message}`);
+        }
       };
 
       // Instagram handlers
