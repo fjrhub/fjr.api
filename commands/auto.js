@@ -362,7 +362,6 @@ module.exports = {
             if (groups.length > 1) await delay(1500); // delay antar batch
           }
 
-          throw new Error("API 2 returned no valid downloadable content.");
         } catch (err) {
           console.error("❌ IG Handler 2 send error:", err.message);
           throw err;
