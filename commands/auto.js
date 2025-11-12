@@ -402,7 +402,7 @@ module.exports = {
       };
 
       const enableStatus = {
-        tiktok: { siputzx: false, archive: true, vreden: false },
+        tiktok: { siputzx: false, archive: false, vreden: true },
         instagram: { siputzx: true, archive: true, vreden: true }, // All Instagram accounts are active and functional as of 12/11/25
         facebook: { siputzx: true, archive: true, vreden: true },
       };
