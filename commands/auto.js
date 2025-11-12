@@ -404,7 +404,7 @@ module.exports = {
       const enableStatus = {
         tiktok: { siputzx: true, archive: true, vreden: true }, // All Instagram accounts are active and functional as of 12/11/25
         instagram: { siputzx: true, archive: true, vreden: true }, // All Instagram accounts are active and functional as of 12/11/25
-        facebook: { siputzx: false, archive: true, vreden: false }, // Siputzx api error 500
+        facebook: { siputzx: false, archive: false, vreden: true }, // Siputzx api error 500, Archive api normal
       };
 
       const apis = [];
