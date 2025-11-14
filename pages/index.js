@@ -1,7 +1,6 @@
-export default function Home() {
-  return (
-    <main>
-      <h1>🤖 Telegram Bot is Running on Vercel</h1>
-    </main>
-  );
+export default function handler(req, res) {
+  res.status(200).json({
+    ok: true,
+    message: "API index berjalan",
+  });
 }
