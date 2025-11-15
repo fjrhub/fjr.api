@@ -1,10 +1,10 @@
-const axios = require("axios");
-import { createUrl } from "../utils/api";
+import axios from "axios";
+import { createUrl } from "../utils/api.js";
 
 // === LOCK GLOBAL UNTUK MENCEGAH DOUBEL EXECUTION ===
 const processingUsers = new Set();
 
-module.exports = {
+export default {
   name: "auto",
   async execute(ctx) {
     const chatId = ctx.chat?.id;

@@ -1,7 +1,7 @@
-const axios = require("axios");
-import { createUrl } from "../utils/api";
+import axios from "axios";
+import { createUrl } from "../utils/api.js";
 
-module.exports = {
+export default {
   name: "waifu",
   description: "Get a random waifu image from two fallback APIs",
   async execute(ctx) {
