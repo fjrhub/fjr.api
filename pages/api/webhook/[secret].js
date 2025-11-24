@@ -6,11 +6,11 @@ export const config = {
   api: { bodyParser: true },
 };
 
-// Pasang listener hanya SEKALI
+// Install the listener only ONCE
 if (!bot._handlersSet) {
   bot.on("message", handleMessage);
   bot.on("callback_query", handleCallback);
-  bot._handlersSet = true; // penanda agar tidak double pasang
+  bot._handlersSet = true; // marker to prevent double installation
 }
 
 export default async function handler(req, res) {
