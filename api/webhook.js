@@ -3,8 +3,15 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
+// Default mode: webhook
 const MODE = process.env.TELEGRAM_MODE || "webhook";
-const BOT_TOKEN = process.env.BOT_TOKEN || "dummy-token"; // dummy-token untuk webhook
+
+// Ambil token dari env
+const BOT_TOKEN = process.env.BOT_TOKEN;
+
+if (!BOT_TOKEN) {
+  throw new Error("BOT_TOKEN must be set in environment variables!");
+}
 
 // ==========================
 // Buat Bot instance
@@ -16,6 +23,11 @@ bot.command("start", (ctx) => ctx.reply("Bot aktif!"));
 bot.on("message", (ctx) => ctx.reply("Pesan diterima ✔️"));
 
 // ==========================
+// Log update masuk (debug)
+// ==========================
+bot.on("message", (ctx) => console.log("Received message:", ctx.message));
+
+// ==========================
 // Export handler top-level untuk Vercel webhook
 // ==========================
 export default async function handler(req, res) {
@@ -24,24 +36,21 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("Incoming update:", JSON.stringify(req.body));
     await bot.handleUpdate(req.body);
     res.status(200).send("OK");
   } catch (err) {
-    console.error(err);
+    console.error("Handler error:", err);
     res.status(500).send("Internal Server Error");
   }
 }
 
 // ==========================
-// Jalankan polling jika MODE=polling
+// Jalankan polling jika MODE=polling (dev/local)
 // ==========================
 if (MODE === "polling") {
-  if (!process.env.BOT_TOKEN) {
-    throw new Error("BOT_TOKEN is required for polling mode!");
-  }
-
-  console.log("[BOT] Running in POLLING mode...");
+  console.log("[BOT] Running in POLLING mode for development...");
   bot.start();
 } else {
-  console.log("[BOT] Webhook mode active (export default handler for Vercel)");
+  console.log("[BOT] Webhook mode active for production (Vercel handler)");
 }
