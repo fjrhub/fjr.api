@@ -1,43 +1,47 @@
 import { Bot } from "grammy";
 import dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" }); // load env
+dotenv.config({ path: ".env.local" });
 
-const bot = new Bot(process.env.BOT_TOKEN);
-const MODE = process.env.TELEGRAM_MODE || "polling";
+const MODE = process.env.TELEGRAM_MODE || "webhook";
+const BOT_TOKEN = process.env.BOT_TOKEN || "dummy-token"; // dummy-token untuk webhook
+
+// ==========================
+// Buat Bot instance
+// ==========================
+const bot = new Bot(BOT_TOKEN);
 
 // Handler contoh
 bot.command("start", (ctx) => ctx.reply("Bot aktif!"));
 bot.on("message", (ctx) => ctx.reply("Pesan diterima ✔️"));
 
 // ==========================
-// POLLING MODE
+// Export handler top-level untuk Vercel webhook
 // ==========================
-if (MODE === "polling") {
-  console.log("[BOT] Running in POLLING mode...");
-  bot.start();
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  try {
+    await bot.handleUpdate(req.body);
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
 }
 
 // ==========================
-// WEBHOOK MODE
+// Jalankan polling jika MODE=polling
 // ==========================
-// Untuk host seperti Vercel / server Node biasa
-else if (MODE === "webhook") {
-  console.log("[BOT] Running in WEBHOOK mode...");
+if (MODE === "polling") {
+  if (!process.env.BOT_TOKEN) {
+    throw new Error("BOT_TOKEN is required for polling mode!");
+  }
 
-  const express = await import("express");
-  const app = express.default();
-
-  app.use(express.json());
-
-  // Endpoint webhook → /api/webhook
-  app.use("/api/webhook", bot.webhookCallback("/api/webhook"));
-
-  const PORT = process.env.PORT || 3000;
-
-  app.listen(PORT, () => {
-    console.log(`Webhook listening on port ${PORT}`);
-  });
+  console.log("[BOT] Running in POLLING mode...");
+  bot.start();
 } else {
-  console.error("Unknown TELEGRAM_MODE. Use polling or webhook.");
+  console.log("[BOT] Webhook mode active (export default handler for Vercel)");
 }
