@@ -3,56 +3,37 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-// ==========================
-// Konfigurasi mode dan token
-// ==========================
-const MODE = process.env.TELEGRAM_MODE || "webhook"; // default webhook
+const MODE = process.env.TELEGRAM_MODE || "webhook";
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
-if (!BOT_TOKEN) {
-  throw new Error("BOT_TOKEN must be set in environment variables!");
-}
+if (!BOT_TOKEN) throw new Error("BOT_TOKEN harus diisi!");
 
-// ==========================
-// Buat Bot instance
-// ==========================
-const bot = new Bot(BOT_TOKEN);
+// Singleton bot
+const bot = global._botInstance ?? new Bot(BOT_TOKEN);
+global._botInstance = bot;
 
-// ==========================
-// Handler contoh
-// ==========================
+// Handler sederhana
 bot.command("start", (ctx) => ctx.reply("Bot aktif!"));
 bot.on("message", (ctx) => ctx.reply("Pesan diterima ✔️"));
 
-// ==========================
-// Debug log untuk setiap update
-// ==========================
-bot.on("message", (ctx) => console.log("Received message:", ctx.message));
+// Polling mode (development)
+if (MODE === "polling" && !global._botPollingStarted) {
+  console.log("[BOT] Polling mode aktif (development)");
+  bot.start();
+  global._botPollingStarted = true;
+} else {
+  console.log("[BOT] Webhook mode aktif (production)");
+}
 
-// ==========================
-// Export handler top-level untuk Vercel webhook
-// ==========================
+// Export handler untuk Vercel webhook
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
-  }
+  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
   try {
-    console.log("Incoming update:", JSON.stringify(req.body));
     await bot.handleUpdate(req.body);
     res.status(200).send("OK");
   } catch (err) {
     console.error("Handler error:", err);
     res.status(500).send("Internal Server Error");
   }
-}
-
-// ==========================
-// Jalankan polling jika MODE=polling (dev/local)
-// ==========================
-if (MODE === "polling") {
-  console.log("[BOT] Running in POLLING mode for development...");
-  bot.start();
-} else {
-  console.log("[BOT] Webhook mode active for production (Vercel handler)");
 }
