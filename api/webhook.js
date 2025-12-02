@@ -5,39 +5,31 @@ dotenv.config({ path: ".env.local" });
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const SECRET = process.env.TELEGRAM_SECRET;
-const MODE = process.env.TELEGRAM_MODE || "webhook";
 
-if (!BOT_TOKEN) throw new Error("BOT_TOKEN harus diisi!");
-if (!SECRET) throw new Error("TELEGRAM_SECRET harus diisi!");
+if (!BOT_TOKEN || !SECRET) throw new Error("BOT_TOKEN atau TELEGRAM_SECRET tidak diisi!");
 
 const bot = global._botInstance ?? new Bot(BOT_TOKEN);
 global._botInstance = bot;
 
+// Contoh command
 bot.command("start", (ctx) => ctx.reply("Bot aktif!"));
 bot.on("message", (ctx) => ctx.reply("Pesan diterima ✔️"));
 
-if (MODE === "polling" && !global._botPollingStarted) {
-  console.log("[BOT] Polling mode aktif");
-  bot.start();
-  global._botPollingStarted = true;
-}
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+  const urlParts = req.url.split("/"); // ambil secret dari path
+  const secretInPath = urlParts[urlParts.length - 1];
 
-  // =========================================
-  // 🔐 SECURITY: Validasi Header Secret Token
-  // =========================================
-  const headerSecret = req.headers["x-telegram-bot-api-secret-token"];
+  // Validasi secret
+  if (secretInPath !== SECRET) {
+    return res.status(403).send("Forbidden: Invalid Secret");
+  }
 
-  if (headerSecret !== SECRET) {
-    console.warn("❌ Webhook ditolak: Secret header salah");
-    return res.status(403).send("Forbidden");
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
   }
 
   try {
     if (!bot.isInited()) await bot.init();
-
     await bot.handleUpdate(req.body);
     return res.status(200).send("OK");
   } catch (err) {
