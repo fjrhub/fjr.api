@@ -16,11 +16,10 @@ bot.command("start", (ctx) => ctx.reply("Bot aktif!"));
 bot.on("message", (ctx) => ctx.reply("Pesan diterima ✔️"));
 
 export default async function handler(req, res) {
-  const urlParts = req.url.split("/"); // ambil secret dari path
-  const secretInPath = urlParts[urlParts.length - 1];
+  const { secret } = req.query; // ambil dari path /webhook/[secret]
 
   // Validasi secret
-  if (secretInPath !== SECRET) {
+  if (secret !== SECRET) {
     return res.status(403).send("Forbidden: Invalid Secret");
   }
 
