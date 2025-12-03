@@ -119,3 +119,13 @@ export async function handleCallback(ctx) {
     ctx.answerCallbackQuery({ text: "⚠️ Error memproses aksi." });
   }
 }
+
+export default async function handler(req, res) {
+  console.log("Request received:", req.method, req.query);
+  const { secret } = req.query;
+  if (secret !== SECRET) {
+    console.log("Forbidden: Invalid secret");
+    return res.status(403).send("Forbidden");
+  }
+  // ...
+}
