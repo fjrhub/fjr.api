@@ -1,5 +1,5 @@
 import axios from "axios";
-import { createUrl } from "../utils/api.js";
+import { createUrl } from "../../utils/api.js";
 
 // === LOCK GLOBAL UNTUK MENCEGAH DOUBEL EXECUTION ===
 const processingUsers = new Set();
